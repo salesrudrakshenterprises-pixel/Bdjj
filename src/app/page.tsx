@@ -1,379 +1,244 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
-  Sparkles, Calendar, Brain, Heart, Image, FileText, Phone,
-  Quote, Play, ArrowRight, RefreshCw, ChevronRight, Sun
+  Sparkles, Calendar, Brain, Heart, Quote, Play,
+  ArrowRight, Sun, Clock, Users, Star
 } from 'lucide-react';
 import { events } from '@/lib/data';
 import { formatDate } from '@/lib/utils';
 
 const quickActions = [
-  { icon: Calendar, label: 'Events', href: '/events' },
-  { icon: Brain, label: 'Meditation', href: '/meditate' },
-  { icon: Heart, label: 'Donate', href: '/donations' },
-  { icon: Image, label: 'Gallery', href: '/gallery' },
-  { icon: FileText, label: 'Blog', href: '/blog' },
-  { icon: Phone, label: 'Contact', href: '/contact' },
+  { icon: Calendar, label: 'Events', href: '/events', color: '#C89B3C' },
+  { icon: Brain, label: 'Meditate', href: '/meditate', color: '#7C5CFC' },
+  { icon: Heart, label: 'Donate', href: '/donations', color: '#E87A2F' },
+  { icon: Sun, label: 'Blessings', href: '/blessings', color: '#C89B3C' },
+  { icon: Users, label: 'Community', href: '/community', color: '#7C5CFC' },
+  { icon: Star, label: 'Gallery', href: '/gallery', color: '#E87A2F' },
 ];
 
-const mantraData = {
-  text: 'Om Bhur Bhuvah Swah, Tat Savitur Varenyam, Bhargo Devasya Dhimahi, Dhiyo Yo Nah Prachodayat',
-  sanskrit: 'ॐ भूर्भुवः स्वः । तत्सवितुर्वरेण्यम् । भर्गो देवस्य धीमहि । धियो यो नः प्रचोदयात् ॥',
-  source: 'Gayatri Mantra',
+const fadeUp = {
+  initial: { opacity: 0, y: 12 },
+  animate: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.16, 1, 0.3, 1] as const } }
 };
 
-const guruMessage = {
-  quote: 'The divine light that you seek outside is already shining within your heart. Turn your gaze inward, and you will find the eternal peace that has always been waiting for you.',
-  author: '— Gurudev',
-};
-
-const videos = [
-  { id: 'v1', title: 'Morning Satsang', duration: '45:00', thumbnail: 'https://images.unsplash.com/photo-1518621736915-f3b1c41bfd00?w=400' },
-  { id: 'v2', title: 'Guided Meditation', duration: '20:00', thumbnail: 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=400' },
-  { id: 'v3', title: 'Divine Discourse', duration: '60:00', thumbnail: 'https://images.unsplash.com/photo-1600334089648-b0d9d3028eb2?w=400' },
-];
-
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: { opacity: 1, transition: { staggerChildren: 0.08 } },
-};
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] as const } },
-};
-
-function SkeletonBlock({ className }: { className?: string }) {
-  return <div className={`skeleton ${className || ''}`} />;
-}
-
-function HomeSkeleton() {
+function Skeleton() {
   return (
-    <div className="app-content space-y-5">
-      <SkeletonBlock className="h-[240px] w-full rounded-[20px]" />
-      <SkeletonBlock className="h-[160px] w-full rounded-[20px]" />
-      <div className="grid grid-cols-3 gap-3">
-        {[...Array(6)].map((_, i) => (
-          <SkeletonBlock key={i} className="h-[90px] rounded-2xl" />
-        ))}
-      </div>
-      <SkeletonBlock className="h-[24px] w-[180px]" />
-      <div className="flex gap-3">
-        <SkeletonBlock className="h-[200px] w-[280px] shrink-0 rounded-[20px]" />
-        <SkeletonBlock className="h-[200px] w-[280px] shrink-0 rounded-[20px]" />
-      </div>
-      <SkeletonBlock className="h-[200px] w-full rounded-[20px]" />
-      <SkeletonBlock className="h-[140px] w-full rounded-[20px]" />
+    <div className="space-y-4 pt-2">
+      {[200, 130, 90, 170, 120].map((h, i) => (
+        <div key={i} className="shimmer" style={{ height: h }} />
+      ))}
     </div>
   );
 }
 
 export default function HomePage() {
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [pullDistance, setPullDistance] = useState(0);
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const touchStartY = useRef(0);
-  const isPulling = useRef(false);
 
   useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 1500);
-    return () => clearTimeout(timer);
+    const t = setTimeout(() => setLoading(false), 1200);
+    return () => clearTimeout(t);
   }, []);
 
-  const handleTouchStart = useCallback((e: React.TouchEvent) => {
-    if (scrollRef.current && scrollRef.current.scrollTop <= 0) {
-      touchStartY.current = e.touches[0].clientY;
-      isPulling.current = true;
-    }
-  }, []);
-
-  const handleTouchMove = useCallback((e: React.TouchEvent) => {
-    if (!isPulling.current || refreshing) return;
-    const dy = e.touches[0].clientY - touchStartY.current;
-    if (dy > 0) {
-      const distance = Math.min(dy * 0.4, 120);
-      setPullDistance(distance);
-    }
-  }, [refreshing]);
-
-  const handleTouchEnd = useCallback(() => {
-    if (!isPulling.current) return;
-    isPulling.current = false;
-    if (pullDistance >= 80) {
-      setRefreshing(true);
-      setTimeout(() => {
-        setRefreshing(false);
-        setPullDistance(0);
-      }, 1000);
-    } else {
-      setPullDistance(0);
-    }
-  }, [pullDistance]);
-
-  if (loading) return <HomeSkeleton />;
+  if (loading) return <Skeleton />;
 
   return (
-    <div
-      ref={scrollRef}
-      className="app-content overflow-y-auto"
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
-    >
-      <AnimatePresence>
-        {pullDistance > 0 && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1, height: pullDistance }}
-            exit={{ opacity: 0, height: 0 }}
-            className="flex items-center justify-center overflow-hidden"
-          >
-            {refreshing ? (
-              <RefreshCw className="w-5 h-5 text-accent animate-spin" />
-            ) : (
-              <motion.div
-                animate={{ rotate: pullDistance > 60 ? 180 : 0 }}
-                className="text-accent"
-              >
-                <RefreshCw className="w-5 h-5" />
-              </motion.div>
-            )}
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <motion.div
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
-        className="space-y-5 pb-4"
+    <div className="pb-8">
+      {/* Hero */}
+      <motion.div {...fadeUp} className="relative overflow-hidden rounded-[24px] min-h-[220px] p-6 mb-5"
+        style={{ background: 'linear-gradient(135deg, #C89B3C 0%, #D4A84B 40%, #E8D5A3 100%)' }}
       >
-        {/* Hero Banner */}
-        <motion.div variants={itemVariants}>
-          <div className="hero-card hero-gradient p-6 flex flex-col justify-end min-h-[240px] relative overflow-hidden">
-            <div className="absolute -top-8 -right-8 text-8xl text-white/10 font-display animate-float select-none">
-              ॐ
+        <div className="relative z-10 h-full flex flex-col justify-between">
+          <div>
+            <div className="flex items-center gap-1.5 mb-3">
+              <Sparkles size={12} className="text-white/80" />
+              <span className="text-[11px] font-semibold text-white/80 tracking-wider uppercase">Today's Blessing</span>
             </div>
-            <div className="absolute -bottom-4 -left-4 text-6xl text-white/5 font-display select-none">
-              ॐ
-            </div>
-            <div className="relative z-10">
-              <span className="inline-flex items-center text-white/80 text-xs font-semibold tracking-wider uppercase mb-2">
-                <Sun className="w-3.5 h-3.5 mr-1.5" />
-                Today&apos;s Blessing
-              </span>
-              <h1 className="font-display text-3xl md:text-4xl font-bold text-white leading-tight mb-2">
-                Find Peace Within
-              </h1>
-              <p className="text-white/70 text-sm max-w-[240px]">
-                Begin your journey to inner harmony and spiritual awakening
-              </p>
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Daily Blessing Card */}
-        <motion.div variants={itemVariants}>
-          <Link href="/blessings" className="block">
-            <div className="app-card p-5">
-              <div className="flex items-center gap-2 mb-3">
-                <Sparkles className="w-4 h-4 text-accent" />
-                <span className="text-xs font-semibold text-accent uppercase tracking-wider">Daily Blessing</span>
-              </div>
-              <h3 className="font-display text-xl font-bold text-text-primary mb-2">The Light Within</h3>
-              <p className="text-sm text-text-secondary leading-relaxed italic mb-3">
-                &ldquo;Just as a lamp dispels darkness, the light of divine knowledge dispels the ignorance of the soul.&rdquo;
-              </p>
-              <div className="w-full h-px bg-accent/10 mb-3" />
-              <div className="flex items-center gap-1 text-accent text-sm font-medium">
-                <span>Tap to read more</span>
-                <ChevronRight className="w-4 h-4" />
-              </div>
-            </div>
-          </Link>
-        </motion.div>
-
-        {/* Quick Actions Grid */}
-        <motion.div variants={itemVariants}>
-          <div className="grid grid-cols-3 gap-3">
-            {quickActions.map((action) => {
-              const Icon = action.icon;
-              return (
-                <Link
-                  key={action.label}
-                  href={action.href}
-                  className="rounded-2xl bg-accent-soft p-4 flex flex-col items-center gap-2 text-sm font-medium text-text-primary active:scale-95 transition-transform"
-                >
-                  <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center shadow-sm">
-                    <Icon className="w-5 h-5 text-accent" />
-                  </div>
-                  <span className="text-xs font-semibold">{action.label}</span>
-                </Link>
-              );
-            })}
-          </div>
-        </motion.div>
-
-        {/* Upcoming Events */}
-        <motion.div variants={itemVariants}>
-          <div className="section-header">
-            <h2 className="section-title">Upcoming Events</h2>
-            <Link href="/events" className="section-action flex items-center gap-0.5">
-              See All <ChevronRight className="w-3.5 h-3.5" />
-            </Link>
-          </div>
-          <div className="scroll-x">
-            {events.slice(0, 4).map((event) => (
-              <Link key={event.id} href={`/events/${event.id}`} className="block">
-                <div className="app-card w-[280px] p-4">
-                  <div className="flex items-start justify-between mb-3">
-                    <span className="badge badge-gold text-[10px] uppercase tracking-wider">{event.type}</span>
-                    <span className="text-xs font-semibold text-accent">
-                      {event.price === 0 ? 'Free' : `\u20B9${event.price}`}
-                    </span>
-                  </div>
-                  <h3 className="font-display text-base font-bold text-text-primary mb-1.5 line-clamp-2">
-                    {event.title}
-                  </h3>
-                  <p className="text-xs text-text-muted mb-1">{formatDate(event.date)}</p>
-                  <p className="text-xs text-text-muted truncate">{event.location}</p>
-                  <div className="mt-3 w-full h-1.5 bg-bg-secondary rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-accent rounded-full"
-                      style={{ width: `${(event.registered / event.capacity) * 100}%` }}
-                    />
-                  </div>
-                  <p className="text-[10px] text-text-muted mt-1.5">
-                    {event.registered}/{event.capacity} registered
-                  </p>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </motion.div>
-
-        {/* Today's Mantra */}
-        <motion.div variants={itemVariants}>
-          <div className="app-card-glass p-6 relative overflow-hidden">
-            <div className="absolute top-3 right-3 text-accent/10">
-              <Quote className="w-12 h-12" />
-            </div>
-            <Quote className="w-6 h-6 text-accent mb-4" />
-            <p className="font-display text-lg font-bold text-text-primary leading-relaxed mb-3">
-              {mantraData.text}
+            <h1 className="font-display text-3xl text-white leading-[1.15] font-bold tracking-tight">
+              Find Peace<br />Within
+            </h1>
+            <p className="text-white/80 text-sm mt-2 max-w-[200px] leading-relaxed">
+              Begin your journey to inner peace and divine connection
             </p>
-            <p className="text-sm text-text-secondary font-display italic mb-4 leading-relaxed">
-              {mantraData.sanskrit}
-            </p>
-            <div className="flex items-center gap-2">
-              <div className="w-1 h-1 rounded-full bg-accent" />
-              <span className="text-xs text-text-muted font-medium">Chant this mantra</span>
-            </div>
           </div>
-        </motion.div>
-
-        {/* Guru's Message */}
-        <motion.div variants={itemVariants}>
-          <div className="section-header pb-2">
-            <h2 className="section-title">Gurudev&apos;s Wisdom</h2>
-          </div>
-          <div className="app-card p-5" style={{ borderLeft: '3px solid #C89B3C' }}>
-            <Quote className="w-5 h-5 text-accent/40 mb-3" />
-            <p className="text-sm text-text-secondary leading-relaxed italic mb-4">
-              &ldquo;{guruMessage.quote}&rdquo;
-            </p>
-            <p className="text-xs font-semibold text-accent mb-3">{guruMessage.author}</p>
-            <Link
-              href="/gurudev"
-              className="inline-flex items-center gap-1 text-accent text-sm font-medium"
+          <div className="mt-5">
+            <Link href="/blessings"
+              className="inline-flex items-center gap-1.5 bg-white/20 backdrop-blur-sm text-white text-sm font-semibold px-4 py-2.5 rounded-full hover:bg-white/30 transition-all active:scale-95"
             >
-              Read More <ArrowRight className="w-3.5 h-3.5" />
+              Receive Blessing <ArrowRight size={14} />
             </Link>
           </div>
-        </motion.div>
-
-        {/* Latest Videos */}
-        <motion.div variants={itemVariants}>
-          <div className="section-header">
-            <h2 className="section-title">Latest Videos</h2>
-            <Link href="/gallery" className="section-action flex items-center gap-0.5">
-              See All <ChevronRight className="w-3.5 h-3.5" />
-            </Link>
-          </div>
-          <div className="scroll-x">
-            {videos.map((video) => (
-              <div
-                key={video.id}
-                className="relative w-[240px] h-[152px] rounded-[20px] overflow-hidden bg-neutral-900 shrink-0 cursor-pointer active:scale-[0.98] transition-transform"
-              >
-                <img
-                  src={video.thumbnail}
-                  alt={video.title}
-                  className="w-full h-full object-cover opacity-80"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center">
-                    <Play className="w-5 h-5 text-white ml-0.5" />
-                  </div>
-                </div>
-                <div className="absolute bottom-3 left-3 right-3">
-                  <p className="text-white text-sm font-semibold truncate">{video.title}</p>
-                  <p className="text-white/60 text-xs mt-0.5">{video.duration}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </motion.div>
-
-        {/* Meditation Section */}
-        <motion.div variants={itemVariants}>
-          <Link href="/meditate" className="block">
-            <div
-              className="rounded-[20px] p-6 relative overflow-hidden"
-              style={{ background: 'linear-gradient(135deg, #1A1A1E 0%, #2A2A2E 100%)' }}
-            >
-              <div className="absolute -top-6 -right-6 text-7xl text-white/5 font-display select-none">
-                ॐ
-              </div>
-              <Brain className="w-8 h-8 text-accent mb-4" />
-              <h3 className="text-white font-display text-xl font-bold mb-1">Daily Meditation</h3>
-              <p className="text-white/60 text-sm mb-5">5 min &bull; Guided</p>
-              <button className="btn-app btn-primary-app w-full">
-                <Play className="w-4 h-4" />
-                Start
-              </button>
-            </div>
-          </Link>
-        </motion.div>
-
-        {/* Donation Card */}
-        <motion.div variants={itemVariants}>
-          <div
-            className="rounded-[20px] p-6"
-            style={{ background: 'rgba(200,155,60,0.06)' }}
-          >
-            <Heart className="w-8 h-8 text-accent mb-3" />
-            <h3 className="font-display text-xl font-bold text-text-primary mb-2">Support the Mission</h3>
-            <p className="text-sm text-text-secondary leading-relaxed mb-5">
-              Your contributions help us spread spiritual wisdom, serve humanity, and preserve sacred traditions for generations to come.
-            </p>
-            <Link href="/donations">
-              <button className="btn-app btn-primary-app w-full">
-                <Heart className="w-4 h-4" />
-                Donate Now
-              </button>
-            </Link>
-          </div>
-        </motion.div>
-
-        {/* Bottom Spacing */}
-        <div className="h-8" />
+        </div>
+        {/* Decorative OM */}
+        <div className="absolute -right-6 -top-6 text-white/10">
+          <span style={{ fontSize: 120, fontFamily: 'serif', fontWeight: 700 }}>ॐ</span>
+        </div>
       </motion.div>
+
+      {/* Quick Actions */}
+      <motion.div {...fadeUp} transition={{ delay: 0.1, duration: 0.4 }}>
+        <div className="grid grid-cols-6 gap-2.5 mb-6">
+          {quickActions.map((item) => (
+            <Link key={item.href} href={item.href}
+              className="flex flex-col items-center gap-1.5 p-2.5 rounded-2xl transition-all active:scale-90"
+              style={{ background: `color-mix(in srgb, ${item.color} 8%, transparent)` }}
+            >
+              <div className="w-9 h-9 rounded-full flex items-center justify-center"
+                style={{ background: `color-mix(in srgb, ${item.color} 15%, transparent)` }}
+              >
+                <item.icon size={16} style={{ color: item.color }} />
+              </div>
+              <span className="text-[10px] font-medium" style={{ color: 'var(--text-secondary)' }}>{item.label}</span>
+            </Link>
+          ))}
+        </div>
+      </motion.div>
+
+      {/* Daily Blessing Card */}
+      <motion.div {...fadeUp} transition={{ delay: 0.15, duration: 0.4 }}>
+        <div className="card p-5 mb-5">
+          <div className="flex items-center gap-2 mb-3">
+            <Sparkles size={14} style={{ color: '#C89B3C' }} />
+            <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: '#C89B3C' }}>Daily Blessing</span>
+          </div>
+          <h3 className="font-display text-xl font-bold mb-2" style={{ color: 'var(--text)' }}>The Light Within</h3>
+          <p className="text-sm leading-relaxed mb-3 italic" style={{ color: 'var(--text-secondary)' }}>
+            "Just as a lamp dispels darkness, the divine light within illuminates your true path."
+          </p>
+          <div style={{ height: 1, background: 'var(--border)', marginBottom: 12 }} />
+          <Link href="/blessings" className="text-sm font-semibold flex items-center gap-1" style={{ color: '#C89B3C' }}>
+            Read full blessing <ArrowRight size={13} />
+          </Link>
+        </div>
+      </motion.div>
+
+      {/* Upcoming Events */}
+      <motion.div {...fadeUp} transition={{ delay: 0.2, duration: 0.4 }}>
+        <div className="section-header">
+          <h2 className="section-title">Upcoming Events</h2>
+          <Link href="/events" className="section-link">See All</Link>
+        </div>
+        <div className="scroll-x pb-2 mb-5">
+          {events.slice(0, 3).map((event) => (
+            <Link key={event.id} href="/events" className="card p-4" style={{ width: 250 }}>
+              <div className="flex items-center gap-2 mb-2.5">
+                <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full" style={{ background: 'rgba(200,155,60,0.1)', color: '#C89B3C' }}>
+                  {event.type}
+                </span>
+                {event.price === 0 && (
+                  <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full" style={{ background: 'rgba(124,92,252,0.1)', color: '#7C5CFC' }}>
+                    Free
+                  </span>
+                )}
+              </div>
+              <h4 className="font-semibold text-sm mb-2 leading-snug">{event.title}</h4>
+              <div className="flex items-center gap-1.5 mb-1">
+                <Calendar size={11} style={{ color: 'var(--text-muted)' }} />
+                <span className="text-[11px]" style={{ color: 'var(--text-secondary)' }}>{formatDate(event.date)}</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Clock size={11} style={{ color: 'var(--text-muted)' }} />
+                <span className="text-[11px]" style={{ color: 'var(--text-secondary)' }}>{event.time}</span>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </motion.div>
+
+      {/* Today's Mantra */}
+      <motion.div {...fadeUp} transition={{ delay: 0.25, duration: 0.4 }}>
+        <div className="card p-6 mb-5 text-center" style={{ background: 'var(--card-alt)' }}>
+          <Quote size={18} style={{ color: '#C89B3C', opacity: 0.4, marginBottom: 8 }} />
+          <p className="font-display text-lg font-bold mb-2 leading-relaxed" style={{ color: 'var(--text)' }}>
+            Om Bhur Bhuvah Swah
+          </p>
+          <p className="text-sm leading-relaxed mb-3" style={{ color: 'var(--text-secondary)' }}>
+            Tat Savitur Varenyam, Bhargo Devasya Dhimahi, Dhiyo Yo Nah Prachodayat
+          </p>
+          <p className="text-2xl mb-3" style={{ color: 'var(--text-muted)' }}>ॐ</p>
+          <span className="text-[11px] font-medium" style={{ color: '#C89B3C' }}>Gayatri Mantra — Chant with devotion</span>
+        </div>
+      </motion.div>
+
+      {/* Guru's Message */}
+      <motion.div {...fadeUp} transition={{ delay: 0.3, duration: 0.4 }}>
+        <div className="section-header">
+          <h2 className="section-title">Gurudev's Wisdom</h2>
+        </div>
+        <div className="card p-5 mb-5" style={{ borderLeft: '3px solid #C89B3C', borderRadius: 20 }}>
+          <p className="text-sm leading-relaxed italic mb-4" style={{ color: 'var(--text-secondary)' }}>
+            "The divine light that you seek outside is already shining within your heart. Turn your gaze inward, and you will find the eternal peace that has always been waiting for you."
+          </p>
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-semibold" style={{ color: 'var(--text)' }}>— Gurudev</span>
+            <Link href="/gurudev" className="text-[12px] font-semibold flex items-center gap-1" style={{ color: '#C89B3C' }}>
+              Read More <ArrowRight size={12} />
+            </Link>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Meditation CTA */}
+      <motion.div {...fadeUp} transition={{ delay: 0.35, duration: 0.4 }}>
+        <div className="card p-6 mb-5 text-white" style={{ background: 'linear-gradient(135deg, #1A1A1E 0%, #2A2A2E 100%)' }}>
+          <div className="flex items-center gap-2 mb-3">
+            <Brain size={16} className="text-white/70" />
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-white/70">Daily Practice</span>
+          </div>
+          <h3 className="font-display text-2xl font-bold mb-1">Daily Meditation</h3>
+          <p className="text-white/60 text-sm mb-5">5 min • Guided • Calm your mind</p>
+          <Link href="/meditate"
+            className="inline-flex items-center gap-2 bg-[#C89B3C] text-white font-semibold px-6 py-3 rounded-full text-sm hover:bg-[#B8892C] transition-all active:scale-95 shadow-lg"
+            style={{ boxShadow: '0 4px 16px rgba(200,155,60,0.3)' }}
+          >
+            <Play size={14} fill="white" /> Start Session
+          </Link>
+        </div>
+      </motion.div>
+
+      {/* Videos */}
+      <motion.div {...fadeUp} transition={{ delay: 0.4, duration: 0.4 }}>
+        <div className="section-header">
+          <h2 className="section-title">Latest Videos</h2>
+          <Link href="/gallery" className="section-link">See All</Link>
+        </div>
+        <div className="scroll-x pb-2 mb-5">
+          {['Morning Satsang', 'Guided Meditation', 'Divine Discourse'].map((title, i) => (
+            <div key={i} className="card" style={{ width: 200 }}>
+              <div className="relative h-[120px] flex items-center justify-center"
+                style={{ background: `linear-gradient(135deg, #2A2A2E, #3A3A3E)` }}
+              >
+                <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur flex items-center justify-center">
+                  <Play size={16} fill="white" style={{ color: 'white', marginLeft: 2 }} />
+                </div>
+              </div>
+              <div className="p-3">
+                <h4 className="text-xs font-semibold">{title}</h4>
+                <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>45:00</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </motion.div>
+
+      {/* Donation */}
+      <motion.div {...fadeUp} transition={{ delay: 0.45, duration: 0.4 }}>
+        <div className="card p-5 mb-5 flex items-center justify-between" style={{ background: 'rgba(200,155,60,0.05)' }}>
+          <div>
+            <h3 className="font-semibold text-base mb-1">Support Our Mission</h3>
+            <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>Help us spread divine wisdom</p>
+          </div>
+          <Link href="/donations"
+            className="inline-flex items-center gap-1.5 bg-[#C89B3C] text-white text-sm font-semibold px-5 py-2.5 rounded-full active:scale-95 transition-all"
+          >
+            <Heart size={13} /> Donate
+          </Link>
+        </div>
+      </motion.div>
+
+      <div className="h-6" />
     </div>
   );
 }
