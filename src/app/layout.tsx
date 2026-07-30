@@ -1,10 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Playfair_Display } from "next/font/google";
 import "./globals.css";
-import { Navbar } from "@/components/layout/Navbar";
-import { Footer } from "@/components/layout/Footer";
+import { AppShell } from "@/components/layout/AppShell";
 import { ThemeProvider } from "@/components/layout/ThemeProvider";
-import { SacredParticles } from "@/components/shared/SacredParticles";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -17,10 +15,8 @@ const playfair = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  title: "Brahm Divya Jeewan Jyoti | Spiritual Guidance & Divine Blessings",
-  description:
-    "Discover divine peace and spiritual guidance with Gurudev at Brahm Divya Jeewan Jyoti. Join satsangs, meditation, events, and become part of a spiritual community.",
-  keywords: ["spiritual", "gurudev", "meditation", "satsang", "divine", "blessings", "BDJJ"],
+  title: "Brahm Divya Jeewan Jyoti",
+  description: "Your path to divine peace and spiritual enlightenment",
   manifest: "/manifest.json",
   openGraph: {
     title: "Brahm Divya Jeewan Jyoti",
@@ -31,10 +27,11 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#C8A45C",
+  themeColor: "#C89B3C",
   width: "device-width",
   initialScale: 1,
   maximumScale: 5,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({
@@ -47,10 +44,7 @@ export default function RootLayout({
       </head>
       <body className={`${inter.variable} ${playfair.variable} antialiased`}>
         <ThemeProvider>
-          <SacredParticles />
-          <Navbar />
-          <main className="relative z-10 min-h-screen">{children}</main>
-          <Footer />
+          <AppShell>{children}</AppShell>
         </ThemeProvider>
       </body>
     </html>
